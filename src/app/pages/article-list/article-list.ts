@@ -1,4 +1,5 @@
-import { Component, inject } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { ArticleService } from '../../data/article/article.service';
@@ -14,17 +15,25 @@ import { LangToggle } from '../../shared/lang-toggle/lang-toggle';
   templateUrl: './article-list.html',
   styleUrl: './article-list.scss',
 })
-export class ArticleList {
+export class ArticleList implements OnInit {
   protected readonly i18n = inject(I18nService);
   private readonly router = inject(Router);
   private readonly articleService = inject(ArticleService);
   private readonly annotationService = inject(AnnotationService);
+  private readonly destroyRef = inject(DestroyRef);
 
-  articles: Article[] = this.articleService.getAll();
+  articles: Article[] = [];
   selectedIds = new Set<string>();
 
   get allSelected(): boolean {
     return this.articles.length > 0 && this.selectedIds.size === this.articles.length;
+  }
+
+  ngOnInit(): void {
+    this.articleService
+      .getAll()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((articles) => (this.articles = articles));
   }
 
   toggleAll(): void {
@@ -59,6 +68,6 @@ export class ArticleList {
       this.annotationService.removeByArticle(id);
     }
     this.selectedIds.clear();
-    this.articles = this.articleService.getAll();
+    // No need to manually refresh — BehaviorSubject emits automatically
   }
 }

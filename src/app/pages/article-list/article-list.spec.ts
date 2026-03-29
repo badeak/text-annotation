@@ -19,7 +19,7 @@ describe('ArticleList', () => {
     articleService = TestBed.inject(ArticleService);
     fixture = TestBed.createComponent(ArticleList);
     component = fixture.componentInstance;
-    await fixture.whenStable();
+    component.ngOnInit();
   });
 
   it('should create', () => {
@@ -27,18 +27,16 @@ describe('ArticleList', () => {
   });
 
   it('should show empty message when no articles', () => {
+    fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
     expect(el.textContent).toContain('Статей пока нет');
   });
 
-  it('should load articles on init', () => {
+  it('should load articles reactively', () => {
     articleService.create({ title: 'First', content: 'Content 1' });
     articleService.create({ title: 'Second', content: 'Content 2' });
 
-    // Re-create component so it picks up articles on init
-    fixture = TestBed.createComponent(ArticleList);
-    component = fixture.componentInstance;
-
+    // BehaviorSubject emits automatically — no manual refresh needed
     expect(component.articles).toHaveLength(2);
     expect(component.articles[0].title).toBe('First');
     expect(component.articles[1].title).toBe('Second');
@@ -46,7 +44,6 @@ describe('ArticleList', () => {
 
   it('should toggle selection', () => {
     const article = articleService.create({ title: 'Test', content: 'X' });
-    component.articles = articleService.getAll();
 
     component.toggleSelection(article.id);
     expect(component.selectedIds.has(article.id)).toBe(true);
@@ -58,7 +55,6 @@ describe('ArticleList', () => {
   it('should toggle all', () => {
     articleService.create({ title: 'A', content: '1' });
     articleService.create({ title: 'B', content: '2' });
-    component.articles = articleService.getAll();
 
     component.toggleAll();
     expect(component.selectedIds.size).toBe(2);
@@ -70,10 +66,9 @@ describe('ArticleList', () => {
   });
 
   it('should delete selected articles', () => {
-    const a1 = articleService.create({ title: 'A', content: '1' });
+    const article = articleService.create({ title: 'A', content: '1' });
     articleService.create({ title: 'B', content: '2' });
-    component.articles = articleService.getAll();
-    component.selectedIds.add(a1.id);
+    component.selectedIds.add(article.id);
 
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     component.deleteSelected();
@@ -84,9 +79,8 @@ describe('ArticleList', () => {
   });
 
   it('should not delete when confirm is cancelled', () => {
-    const a1 = articleService.create({ title: 'A', content: '1' });
-    component.articles = articleService.getAll();
-    component.selectedIds.add(a1.id);
+    const article = articleService.create({ title: 'A', content: '1' });
+    component.selectedIds.add(article.id);
 
     vi.spyOn(window, 'confirm').mockReturnValue(false);
     component.deleteSelected();

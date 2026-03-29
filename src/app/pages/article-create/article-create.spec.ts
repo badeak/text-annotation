@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import { ArticleCreate } from './article-create';
 import { ArticleService } from '../../data/article/article.service';
 
@@ -28,37 +29,41 @@ describe('ArticleCreate', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should not save with empty fields', () => {
+  it('should not save with empty fields', async () => {
     const spy = vi.spyOn(router, 'navigate');
     component.save();
 
     expect(component.submitted).toBe(true);
     expect(spy).not.toHaveBeenCalled();
-    expect(articleService.getAll()).toHaveLength(0);
+    const articles = await firstValueFrom(articleService.getAll());
+    expect(articles).toHaveLength(0);
   });
 
-  it('should not save with only title', () => {
+  it('should not save with only title', async () => {
     component.title = 'Title';
     component.save();
 
-    expect(articleService.getAll()).toHaveLength(0);
+    const articles = await firstValueFrom(articleService.getAll());
+    expect(articles).toHaveLength(0);
   });
 
-  it('should not save with only content', () => {
+  it('should not save with only content', async () => {
     component.content = 'Content';
     component.save();
 
-    expect(articleService.getAll()).toHaveLength(0);
+    const articles = await firstValueFrom(articleService.getAll());
+    expect(articles).toHaveLength(0);
   });
 
-  it('should save with valid data and navigate home', () => {
+  it('should save with valid data and navigate home', async () => {
     const spy = vi.spyOn(router, 'navigate');
     component.title = 'My Article';
     component.content = 'Some content';
     component.save();
 
-    expect(articleService.getAll()).toHaveLength(1);
-    expect(articleService.getAll()[0].title).toBe('My Article');
+    const articles = await firstValueFrom(articleService.getAll());
+    expect(articles).toHaveLength(1);
+    expect(articles[0].title).toBe('My Article');
     expect(spy).toHaveBeenCalledWith(['/', 'ru']);
   });
 
@@ -68,11 +73,12 @@ describe('ArticleCreate', () => {
     expect(spy).toHaveBeenCalledWith(['/', 'ru']);
   });
 
-  it('should trim whitespace-only fields as invalid', () => {
+  it('should trim whitespace-only fields as invalid', async () => {
     component.title = '   ';
     component.content = '  ';
     component.save();
 
-    expect(articleService.getAll()).toHaveLength(0);
+    const articles = await firstValueFrom(articleService.getAll());
+    expect(articles).toHaveLength(0);
   });
 });

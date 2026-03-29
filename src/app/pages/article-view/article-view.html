@@ -25,7 +25,7 @@
 
   <div class="page-content">
     <!-- prettier-ignore -->
-    <div #contentEl class="article-content" (mouseup)="onTextSelected()">@for (segment of segments; track $index) {@if (segment.annotation) {<span class="annotated" [class.pending-highlight]="segment.pending" [title]="segment.annotation.note" [style.text-decoration-color]="segment.annotation.color" [class.active]="editingAnnotation?.id === segment.annotation.id" (click)="selectAnnotation(segment.annotation, $event)">{{ segment.text }}</span>} @else if (segment.pending) {<span class="pending-highlight">{{ segment.text }}</span>} @else {<span>{{ segment.text }}</span>}}</div>
+    <div #contentEl class="article-content" (mouseup)="onTextSelected()">@for (segment of segments; track $index) {@if (segment.annotation) {<span class="annotated" [class.pending-highlight]="segment.pending" [attr.data-tooltip]="segment.annotation.note" [style.text-decoration-color]="segment.annotation.color" [class.active]="editingAnnotation?.id === segment.annotation.id" (click)="selectAnnotation(segment.annotation, $event)">{{ segment.text }}</span>} @else if (segment.pending) {<span class="pending-highlight">{{ segment.text }}</span>} @else {<span>{{ segment.text }}</span>}}</div>
   </div>
 
   <app-annotation-panel

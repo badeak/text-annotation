@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { firstValueFrom } from 'rxjs';
 import { ArticleService } from './article.service';
 
 describe('ArticleService', () => {
@@ -9,8 +10,9 @@ describe('ArticleService', () => {
     service = TestBed.inject(ArticleService);
   });
 
-  it('should return empty array when no articles exist', () => {
-    expect(service.getAll()).toEqual([]);
+  it('should return empty array when no articles exist', async () => {
+    const articles = await firstValueFrom(service.getAll());
+    expect(articles).toEqual([]);
   });
 
   it('should create an article', () => {
@@ -22,11 +24,11 @@ describe('ArticleService', () => {
     expect(article.updatedAt).toBeTruthy();
   });
 
-  it('should persist article to localStorage', () => {
+  it('should emit created article through observable', async () => {
     service.create({ title: 'A', content: 'B' });
-    const all = service.getAll();
-    expect(all).toHaveLength(1);
-    expect(all[0].title).toBe('A');
+    const articles = await firstValueFrom(service.getAll());
+    expect(articles).toHaveLength(1);
+    expect(articles[0].title).toBe('A');
   });
 
   it('should get one article by id', () => {
@@ -46,7 +48,6 @@ describe('ArticleService', () => {
     expect(updated).toBeDefined();
     expect(updated!.title).toBe('New');
     expect(updated!.content).toBe('Old content');
-    // updatedAt is refreshed (may be same ms in fast tests, so just check it exists)
     expect(updated!.updatedAt).toBeTruthy();
   });
 
@@ -54,20 +55,22 @@ describe('ArticleService', () => {
     expect(service.update('fake', { title: 'X' })).toBeUndefined();
   });
 
-  it('should remove an article', () => {
+  it('should remove an article and emit update', async () => {
     const article = service.create({ title: 'Delete me', content: 'X' });
     expect(service.remove(article.id)).toBe(true);
-    expect(service.getAll()).toHaveLength(0);
+    const articles = await firstValueFrom(service.getAll());
+    expect(articles).toHaveLength(0);
   });
 
   it('should return false when removing non-existent article', () => {
     expect(service.remove('fake')).toBe(false);
   });
 
-  it('should handle multiple articles', () => {
+  it('should handle multiple articles', async () => {
     service.create({ title: 'A', content: '1' });
     service.create({ title: 'B', content: '2' });
     service.create({ title: 'C', content: '3' });
-    expect(service.getAll()).toHaveLength(3);
+    const articles = await firstValueFrom(service.getAll());
+    expect(articles).toHaveLength(3);
   });
 });
