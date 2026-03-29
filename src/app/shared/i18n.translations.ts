@@ -24,7 +24,7 @@ export const TRANSLATIONS: Record<string, Record<Lang, string>> = {
 
   // Form labels
   'label.title': { ru: 'Название', en: 'Title' },
-  'label.content': { ru: 'Содержание', en: 'Content' },
+  'label.content': { ru: 'Текст', en: 'Content' },
   'label.note': { ru: 'Заметка', en: 'Note' },
   'label.color': { ru: 'Цвет', en: 'Color' },
 
@@ -33,7 +33,7 @@ export const TRANSLATIONS: Record<string, Record<Lang, string>> = {
 
   // Errors
   'error.titleRequired': { ru: 'Название обязательно', en: 'Title is required' },
-  'error.contentRequired': { ru: 'Содержание обязательно', en: 'Content is required' },
+  'error.contentRequired': { ru: 'Текст обязателен', en: 'Content is required' },
   'error.noteRequired': { ru: 'Заметка обязательна', en: 'Note is required' },
 
   // Messages
