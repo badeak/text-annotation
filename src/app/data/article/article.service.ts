@@ -30,7 +30,7 @@ export class ArticleService {
 
   update(id: string, data: Partial<Pick<Article, 'title' | 'content'>>): Article | undefined {
     const articles = this.load();
-    const index = articles.findIndex((a) => a.id === id);
+    const index = articles.findIndex((article) => article.id === id);
     if (index === -1) {
       return undefined;
     }
@@ -45,11 +45,11 @@ export class ArticleService {
 
   remove(id: string): boolean {
     const articles = this.load();
-    const filtered = articles.filter((a) => a.id !== id);
-    if (filtered.length === articles.length) {
+    const remaining = articles.filter((article) => article.id !== id);
+    if (remaining.length === articles.length) {
       return false;
     }
-    this.save(filtered);
+    this.save(remaining);
     return true;
   }
 

@@ -5,7 +5,6 @@ describe('I18nService', () => {
   let service: I18nService;
 
   beforeEach(() => {
-    localStorage.clear();
     service = TestBed.inject(I18nService);
   });
 
@@ -14,17 +13,6 @@ describe('I18nService', () => {
   });
 
   it('should switch language', () => {
-    service.setLang('en');
-    expect(service.lang()).toBe('en');
-  });
-
-  it('should persist language to localStorage', () => {
-    service.setLang('en');
-    expect(localStorage.getItem('lang')).toBe('en');
-  });
-
-  it('should load saved language', () => {
-    localStorage.setItem('lang', 'en');
     service.setLang('en');
     expect(service.lang()).toBe('en');
   });

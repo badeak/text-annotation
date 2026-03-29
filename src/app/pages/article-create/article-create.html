@@ -1,13 +1,15 @@
 <nav class="toolbar">
-  <button type="button" (click)="cancel()">
-    <app-icon name="arrow-left" /> {{ i18n.t('btn.back') }}
-  </button>
-  <span class="toolbar-spacer"></span>
+  <div class="toolbar-left">
+    <button type="button" (click)="cancel()">
+      <app-icon name="arrow-left" /> {{ i18n.t('btn.back') }}
+    </button>
+  </div>
   <h2 class="toolbar-title">{{ i18n.t('page.createArticle') }}</h2>
-  <span class="toolbar-spacer"></span>
-  <button class="btn-accent" type="submit" form="create-form">
-    <app-icon name="save" /> {{ i18n.t('btn.save') }}
-  </button>
+  <div class="toolbar-right">
+    <button class="btn-accent" type="submit" form="create-form">
+      <app-icon name="save" /> {{ i18n.t('btn.save') }}
+    </button>
+  </div>
 </nav>
 
 <form id="create-form" class="page-content" (ngSubmit)="save()" #form="ngForm">

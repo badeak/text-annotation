@@ -6,3 +6,5 @@ export interface Annotation {
   note: string;
   color: string;
 }
+
+export const DEFAULT_ANNOTATION_COLOR = '#ffeb3b';

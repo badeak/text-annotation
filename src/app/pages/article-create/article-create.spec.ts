@@ -59,13 +59,13 @@ describe('ArticleCreate', () => {
 
     expect(articleService.getAll()).toHaveLength(1);
     expect(articleService.getAll()[0].title).toBe('My Article');
-    expect(spy).toHaveBeenCalledWith(['/']);
+    expect(spy).toHaveBeenCalledWith(['/', 'ru']);
   });
 
   it('should navigate home on cancel', () => {
     const spy = vi.spyOn(router, 'navigate');
     component.cancel();
-    expect(spy).toHaveBeenCalledWith(['/']);
+    expect(spy).toHaveBeenCalledWith(['/', 'ru']);
   });
 
   it('should trim whitespace-only fields as invalid', () => {

@@ -1,14 +1,16 @@
 @if (found) {
   <nav class="toolbar">
-    <button type="button" (click)="cancel()">
-      <app-icon name="arrow-left" /> {{ i18n.t('btn.back') }}
-    </button>
-    <span class="toolbar-spacer"></span>
+    <div class="toolbar-left">
+      <button type="button" (click)="cancel()">
+        <app-icon name="arrow-left" /> {{ i18n.t('btn.back') }}
+      </button>
+    </div>
     <h2 class="toolbar-title">{{ i18n.t('page.editArticle') }}</h2>
-    <span class="toolbar-spacer"></span>
-    <button class="btn-accent" type="submit" form="edit-form">
-      <app-icon name="save" /> {{ i18n.t('btn.save') }}
-    </button>
+    <div class="toolbar-right">
+      <button class="btn-accent" type="submit" form="edit-form">
+        <app-icon name="save" /> {{ i18n.t('btn.save') }}
+      </button>
+    </div>
   </nav>
 
   <form id="edit-form" class="page-content" (ngSubmit)="save()" #form="ngForm">
@@ -32,12 +34,12 @@
         aria-labelledby="content-label"
       >
         @for (segment of segments; track $index) {
-          @if (segment.annotationId) {
+          @if (segment.annotation) {
             <span
               class="annotated"
-              [attr.data-annotation-id]="segment.annotationId"
-              [title]="segment.note"
-              [style.text-decoration-color]="segment.color"
+              [attr.data-annotation-id]="segment.annotation.id"
+              [title]="segment.annotation.note"
+              [style.text-decoration-color]="segment.annotation.color"
               >{{ segment.text }}</span
             >
           } @else {

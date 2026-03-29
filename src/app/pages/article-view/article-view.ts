@@ -1,24 +1,23 @@
-import { Component, ElementRef, HostListener, inject, ViewChild } from '@angular/core';
+import { Component, ElementRef, inject, viewChild } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { FormsModule } from '@angular/forms';
 import { ArticleService } from '../../data/article/article.service';
 import { AnnotationService } from '../../data/annotation/annotation.service';
 import { Article } from '../../data/article/article.model';
 import { Annotation } from '../../data/annotation/annotation.model';
+import { ContentSegment } from '../../shared/content-segment/content-segment.model';
+import { buildContentSegments } from '../../shared/content-segment/content-segment.utils';
 import { Icon } from '../../shared/icon/icon';
 import { I18nService } from '../../shared/i18n.service';
-
-interface ContentSegment {
-  text: string;
-  annotation?: Annotation;
-  pending?: boolean;
-}
+import { AnnotationPanel, AnnotationSaveEvent } from '../annotation-panel/annotation-panel';
 
 @Component({
   selector: 'app-article-view',
-  imports: [RouterLink, FormsModule, Icon],
+  imports: [RouterLink, Icon, AnnotationPanel],
   templateUrl: './article-view.html',
   styleUrl: './article-view.scss',
+  host: {
+    '(document:click)': 'onDocumentClick($event)',
+  },
 })
 export class ArticleView {
   protected readonly i18n = inject(I18nService);
@@ -27,7 +26,8 @@ export class ArticleView {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
-  @ViewChild('contentEl') contentEl!: ElementRef<HTMLElement>;
+  readonly contentEl = viewChild.required<ElementRef<HTMLElement>>('contentEl');
+  readonly annotationPanel = viewChild.required(AnnotationPanel);
 
   article?: Article;
   annotations: Annotation[] = [];
@@ -36,9 +36,6 @@ export class ArticleView {
   hasSelection = false;
   panelOpen = false;
   editingAnnotation: Annotation | null = null;
-  newNote = '';
-  newColor = '#ffeb3b';
-  annotationSubmitted = false;
   private pendingStart = 0;
   private pendingEnd = 0;
 
@@ -53,50 +50,65 @@ export class ArticleView {
   selectAnnotation(annotation: Annotation, event: MouseEvent): void {
     event.stopPropagation();
     this.editingAnnotation = annotation;
-    this.newNote = annotation.note;
-    this.newColor = annotation.color;
     this.panelOpen = true;
+    this.annotationPanel().open(annotation);
   }
 
-  @HostListener('document:click', ['$event'])
+  /**
+   * Handles clicks outside the annotation panel/content to close the panel
+   * or clear the text selection.
+   */
   onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
-    const panel = target.closest('.annotation-panel');
-    const toolbar = target.closest('.toolbar');
-    const content = target.closest('.article-content');
+    const isInsidePanel = !!target.closest('.annotation-panel');
+    const isInsideToolbar = !!target.closest('.toolbar');
+    const isInsideContent = !!target.closest('.article-content');
 
+    // When panel is open, close it if clicking outside panel/annotated spans/toolbar
     if (this.panelOpen) {
-      const annotated = target.closest('.annotated');
-      if (!panel && !annotated && !toolbar) {
+      const isInsideAnnotatedSpan = !!target.closest('.annotated');
+      if (!isInsidePanel && !isInsideAnnotatedSpan && !isInsideToolbar) {
         this.cancelAnnotation();
       }
       return;
     }
 
-    // Clear selection when clicking outside content area
-    const isAnnotateBtn = !!target.closest('[data-annotate]');
-    if (!content && !isAnnotateBtn && this.hasSelection) {
+    // When panel is closed, clear text selection if clicking outside content/annotate button
+    const isAnnotateButton = !!target.closest('[data-annotate]');
+    if (!isInsideContent && !isAnnotateButton && this.hasSelection) {
       this.hasSelection = false;
     }
   }
 
+  /**
+   * Detects user text selection within the article content and converts the
+   * browser Selection/Range into character offsets relative to the plain text.
+   */
   onTextSelected(): void {
     if (this.panelOpen) {
       this.cancelAnnotation();
       return;
     }
     const selection = window.getSelection();
-    if (!selection || selection.isCollapsed || !this.contentEl) {
+    if (!selection || selection.isCollapsed || !this.contentEl()) {
       this.hasSelection = false;
       return;
     }
 
     const range = selection.getRangeAt(0);
-    const container = this.contentEl.nativeElement;
+    const container = this.contentEl().nativeElement;
 
-    if (!container.contains(range.startContainer) || !container.contains(range.endContainer)) {
+    const startInside = container.contains(range.startContainer);
+    const endInside = container.contains(range.endContainer);
+
+    if (!startInside && !endInside) {
       this.hasSelection = false;
       return;
+    }
+
+    // Triple-click may extend the range end outside the container — clamp it
+    if (!endInside) {
+      range.setEndAfter(container.lastChild!);
     }
 
     const offsets = this.getSelectionOffsets(container, range);
@@ -112,54 +124,53 @@ export class ArticleView {
 
   openAnnotationInput(): void {
     this.editingAnnotation = null;
-    this.newNote = '';
-    this.newColor = '#ffeb3b';
     this.panelOpen = true;
+    this.annotationPanel().open(null);
     window.getSelection()?.removeAllRanges();
-    this.buildSegments();
+    this.rebuildContentSegments();
   }
 
-  saveAnnotation(): void {
-    this.annotationSubmitted = true;
-    if (!this.article || !this.newNote.trim()) {
+  onAnnotationSaved(event: AnnotationSaveEvent): void {
+    if (!this.article) {
       return;
     }
 
     if (this.editingAnnotation) {
-      // Update existing annotation
-      this.annotationService.remove(this.editingAnnotation.id);
-      this.annotationService.create({
-        articleId: this.article.id,
-        start: this.editingAnnotation.start,
-        end: this.editingAnnotation.end,
-        note: this.newNote.trim(),
-        color: this.newColor,
+      // Update the existing annotation's note and color in place
+      this.annotationService.update(this.editingAnnotation.id, {
+        note: event.note,
+        color: event.color,
       });
     } else {
-      // Create new — handle overlaps
-      const overlapping = this.annotations.filter(
-        (a) => a.start < this.pendingEnd && a.end > this.pendingStart,
+      // Creating a new annotation — resolve overlaps with existing annotations.
+      // Any annotation that overlaps the new selection range is removed and
+      // re-created as trimmed fragments (before and/or after the new range),
+      // preserving the non-overlapping portions.
+      const overlappingAnnotations = this.annotations.filter(
+        (annotation) => annotation.start < this.pendingEnd && annotation.end > this.pendingStart,
       );
-      for (const a of overlapping) {
-        this.annotationService.remove(a.id);
+      for (const overlapping of overlappingAnnotations) {
+        this.annotationService.remove(overlapping.id);
 
-        if (a.start < this.pendingStart) {
+        // Keep the portion before the new annotation
+        if (overlapping.start < this.pendingStart) {
           this.annotationService.create({
             articleId: this.article.id,
-            start: a.start,
+            start: overlapping.start,
             end: this.pendingStart,
-            note: a.note,
-            color: a.color,
+            note: overlapping.note,
+            color: overlapping.color,
           });
         }
 
-        if (a.end > this.pendingEnd) {
+        // Keep the portion after the new annotation
+        if (overlapping.end > this.pendingEnd) {
           this.annotationService.create({
             articleId: this.article.id,
             start: this.pendingEnd,
-            end: a.end,
-            note: a.note,
-            color: a.color,
+            end: overlapping.end,
+            note: overlapping.note,
+            color: overlapping.color,
           });
         }
       }
@@ -168,8 +179,8 @@ export class ArticleView {
         articleId: this.article.id,
         start: this.pendingStart,
         end: this.pendingEnd,
-        note: this.newNote.trim(),
-        color: this.newColor,
+        note: event.note,
+        color: event.color,
       });
     }
 
@@ -179,7 +190,7 @@ export class ArticleView {
 
   cancelAnnotation(): void {
     this.closePanel();
-    this.buildSegments();
+    this.rebuildContentSegments();
   }
 
   removeAnnotation(): void {
@@ -191,53 +202,35 @@ export class ArticleView {
     this.loadAnnotations();
   }
 
-  private closePanel(): void {
-    this.panelOpen = false;
-    this.editingAnnotation = null;
-    this.hasSelection = false;
-    this.newNote = '';
-    this.newColor = '#ffeb3b';
-    this.annotationSubmitted = false;
-    window.getSelection()?.removeAllRanges();
-  }
-
   deleteArticle(): void {
     if (!confirm(this.i18n.t('msg.confirmDeleteArticle'))) {
       return;
     }
     this.articleService.remove(this.article!.id);
     this.annotationService.removeByArticle(this.article!.id);
-    this.router.navigate(['/']);
+    this.router.navigate(this.i18n.path());
   }
 
   back(): void {
-    this.router.navigate(['/']);
+    this.router.navigate(this.i18n.path());
+  }
+
+  private closePanel(): void {
+    this.panelOpen = false;
+    this.editingAnnotation = null;
+    this.hasSelection = false;
+    window.getSelection()?.removeAllRanges();
   }
 
   private loadAnnotations(): void {
     this.annotations = this.annotationService.getByArticle(this.article!.id);
-    this.buildSegments();
+    this.rebuildContentSegments();
   }
 
-  private buildSegments(): void {
-    const content = this.article!.content;
-    const sorted = [...this.annotations].sort((a, b) => a.start - b.start);
-    let segments: ContentSegment[] = [];
-    let cursor = 0;
+  private rebuildContentSegments(): void {
+    let segments = buildContentSegments(this.article!.content, this.annotations);
 
-    for (const ann of sorted) {
-      if (ann.start > cursor) {
-        segments.push({ text: content.slice(cursor, ann.start) });
-      }
-      segments.push({ text: content.slice(ann.start, ann.end), annotation: ann });
-      cursor = ann.end;
-    }
-
-    if (cursor < content.length) {
-      segments.push({ text: content.slice(cursor) });
-    }
-
-    // Mark the pending selection range
+    // Overlay pending highlight when adding a new annotation
     if (this.panelOpen && !this.editingAnnotation) {
       segments = this.applyPendingHighlight(segments);
     }
@@ -245,57 +238,78 @@ export class ArticleView {
     this.segments = segments;
   }
 
+  /**
+   * Splits existing segments to overlay a "pending" highlight on the selected range.
+   * Each segment is tested against the pending range and handled in three cases:
+   * 1. No overlap — segment passes through unchanged
+   * 2. Fully inside pending range — marked as pending
+   * 3. Partial overlap — split into up to 3 parts (before, pending, after)
+   */
   private applyPendingHighlight(segments: ContentSegment[]): ContentSegment[] {
     const result: ContentSegment[] = [];
     let cursor = 0;
 
-    for (const seg of segments) {
-      const segStart = cursor;
-      const segEnd = cursor + seg.text.length;
-      cursor = segEnd;
+    for (const segment of segments) {
+      const segmentStart = cursor;
+      const segmentEnd = cursor + segment.text.length;
+      cursor = segmentEnd;
 
-      // No overlap with pending range
-      if (segEnd <= this.pendingStart || segStart >= this.pendingEnd) {
-        result.push(seg);
+      // Case 1: No overlap with pending range
+      if (segmentEnd <= this.pendingStart || segmentStart >= this.pendingEnd) {
+        result.push(segment);
         continue;
       }
 
-      // Fully inside pending range
-      if (segStart >= this.pendingStart && segEnd <= this.pendingEnd) {
-        result.push({ ...seg, pending: true });
+      // Case 2: Fully inside pending range
+      if (segmentStart >= this.pendingStart && segmentEnd <= this.pendingEnd) {
+        result.push({ ...segment, pending: true });
         continue;
       }
 
-      const overlapStart = Math.max(segStart, this.pendingStart);
-      const overlapEnd = Math.min(segEnd, this.pendingEnd);
+      // Case 3: Partial overlap — split the segment
+      const overlapStart = Math.max(segmentStart, this.pendingStart);
+      const overlapEnd = Math.min(segmentEnd, this.pendingEnd);
 
-      if (overlapStart > segStart) {
-        result.push({ ...seg, text: seg.text.slice(0, overlapStart - segStart), pending: false });
+      if (overlapStart > segmentStart) {
+        result.push({
+          ...segment,
+          text: segment.text.slice(0, overlapStart - segmentStart),
+          pending: false,
+        });
       }
       result.push({
-        ...seg,
-        text: seg.text.slice(overlapStart - segStart, overlapEnd - segStart),
+        ...segment,
+        text: segment.text.slice(overlapStart - segmentStart, overlapEnd - segmentStart),
         pending: true,
       });
-      if (overlapEnd < segEnd) {
-        result.push({ ...seg, text: seg.text.slice(overlapEnd - segStart), pending: false });
+      if (overlapEnd < segmentEnd) {
+        result.push({
+          ...segment,
+          text: segment.text.slice(overlapEnd - segmentStart),
+          pending: false,
+        });
       }
     }
 
     return result;
   }
 
+  /**
+   * Converts a DOM Range into plain-text character offsets relative to the container.
+   * Works by creating a temporary range from the container start to each selection
+   * boundary, then measuring the resulting text length.
+   */
   private getSelectionOffsets(
     container: HTMLElement,
     range: Range,
   ): { start: number; end: number } {
-    const preRange = document.createRange();
-    preRange.selectNodeContents(container);
-    preRange.setEnd(range.startContainer, range.startOffset);
-    const start = preRange.toString().length;
+    const measureRange = document.createRange();
+    measureRange.selectNodeContents(container);
+    measureRange.setEnd(range.startContainer, range.startOffset);
+    const start = measureRange.toString().length;
 
-    preRange.setEnd(range.endContainer, range.endOffset);
-    const end = preRange.toString().length;
+    measureRange.setEnd(range.endContainer, range.endOffset);
+    const end = measureRange.toString().length;
 
     return { start, end };
   }

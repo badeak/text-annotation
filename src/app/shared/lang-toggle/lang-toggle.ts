@@ -1,4 +1,5 @@
 import { Component, inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { I18nService } from '../i18n.service';
 
 @Component({
@@ -17,6 +18,7 @@ import { I18nService } from '../i18n.service';
         padding: 2px 6px;
         cursor: pointer;
         min-width: 32px;
+        justify-content: center;
         background: rgba(255, 255, 255, 0.9);
         color: var(--primary-dark);
         border: none;
@@ -30,8 +32,11 @@ import { I18nService } from '../i18n.service';
 })
 export class LangToggle {
   protected readonly i18n = inject(I18nService);
+  private readonly router = inject(Router);
 
   toggle(): void {
-    this.i18n.setLang(this.i18n.lang() === 'ru' ? 'en' : 'ru');
+    const newLang = this.i18n.lang() === 'ru' ? 'en' : 'ru';
+    const url = this.router.url.replace(/^\/(ru|en)/, `/${newLang}`);
+    this.router.navigateByUrl(url);
   }
 }

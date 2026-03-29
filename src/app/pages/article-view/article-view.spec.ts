@@ -1,5 +1,7 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter, ActivatedRoute } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
+import { provideRouter } from '@angular/router';
+import { routes } from '../../app.routes';
 import { ArticleView } from './article-view';
 import { ArticleService } from '../../data/article/article.service';
 import { AnnotationService } from '../../data/annotation/annotation.service';
@@ -15,7 +17,6 @@ function mockActivatedRoute(id: string) {
 
 describe('ArticleView', () => {
   let articleService: ArticleService;
-  let annotationService: AnnotationService;
 
   beforeEach(() => {
     localStorage.clear();
@@ -25,12 +26,11 @@ describe('ArticleView', () => {
     TestBed.configureTestingModule({
       imports: [ArticleView],
       providers: [
-        provideRouter([]),
+        provideRouter(routes),
         { provide: ActivatedRoute, useValue: mockActivatedRoute(articleId) },
       ],
     });
     articleService = TestBed.inject(ArticleService);
-    annotationService = TestBed.inject(AnnotationService);
   }
 
   it('should create and load article', () => {
@@ -61,8 +61,8 @@ describe('ArticleView', () => {
   it('should build segments from content and annotations', () => {
     const svc = new ArticleService();
     const article = svc.create({ title: 'T', content: 'Hello world test' });
-    const annSvc = new AnnotationService();
-    annSvc.create({
+    const annotationService = new AnnotationService();
+    annotationService.create({
       articleId: article.id,
       start: 6,
       end: 11,
@@ -81,28 +81,14 @@ describe('ArticleView', () => {
     expect(component.segments[2].text).toBe(' test');
   });
 
-  it('should not save annotation with empty note', () => {
+  it('should open and close annotation panel', async () => {
     const svc = new ArticleService();
     const article = svc.create({ title: 'T', content: 'Hello' });
 
     setup(article.id);
     const fixture = TestBed.createComponent(ArticleView);
     const component = fixture.componentInstance;
-
-    component.newNote = '';
-    component.saveAnnotation();
-
-    expect(component.annotationSubmitted).toBe(true);
-    expect(annotationService.getByArticle(article.id)).toHaveLength(0);
-  });
-
-  it('should open and close annotation panel', () => {
-    const svc = new ArticleService();
-    const article = svc.create({ title: 'T', content: 'Hello' });
-
-    setup(article.id);
-    const fixture = TestBed.createComponent(ArticleView);
-    const component = fixture.componentInstance;
+    await fixture.whenStable();
 
     component.openAnnotationInput();
     expect(component.panelOpen).toBe(true);
@@ -111,23 +97,21 @@ describe('ArticleView', () => {
     expect(component.panelOpen).toBe(false);
   });
 
-  it('should reset state when closing panel', () => {
+  it('should reset panel state when closing', async () => {
     const svc = new ArticleService();
     const article = svc.create({ title: 'T', content: 'Hello' });
 
     setup(article.id);
     const fixture = TestBed.createComponent(ArticleView);
     const component = fixture.componentInstance;
+    await fixture.whenStable();
 
-    component.newNote = 'something';
-    component.newColor = '#000000';
-    component.annotationSubmitted = true;
+    component.openAnnotationInput();
     component.cancelAnnotation();
 
-    expect(component.newNote).toBe('');
-    expect(component.newColor).toBe('#ffeb3b');
-    expect(component.annotationSubmitted).toBe(false);
     expect(component.panelOpen).toBe(false);
+    expect(component.editingAnnotation).toBeNull();
+    expect(component.hasSelection).toBe(false);
   });
 
   it('should delete article with confirmation', () => {

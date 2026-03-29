@@ -1,12 +1,15 @@
 <nav class="toolbar">
-  <app-lang-toggle />
-  <span class="toolbar-spacer"></span>
-  <button class="btn-danger" (click)="deleteSelected()" [disabled]="selectedIds.size === 0">
-    <app-icon name="trash" /> {{ i18n.t('btn.delete') }}
-  </button>
-  <button class="btn-accent" routerLink="/create">
-    <app-icon name="plus" /> {{ i18n.t('btn.create') }}
-  </button>
+  <div class="toolbar-left">
+    <app-lang-toggle />
+  </div>
+  <div class="toolbar-right">
+    <button class="btn-danger" (click)="deleteSelected()" [disabled]="selectedIds.size === 0">
+      <app-icon name="trash" /> {{ i18n.t('btn.delete') }}
+    </button>
+    <button class="btn-accent" [routerLink]="i18n.path('create')">
+      <app-icon name="plus" /> {{ i18n.t('btn.create') }}
+    </button>
+  </div>
 </nav>
 
 <div class="page-content">

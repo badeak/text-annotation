@@ -2,6 +2,8 @@ import { Injectable, signal } from '@angular/core';
 
 export type Lang = 'ru' | 'en';
 
+export const DEFAULT_LANG: Lang = 'ru';
+
 const TRANSLATIONS: Record<string, Record<Lang, string>> = {
   // Buttons
   'btn.back': { ru: 'Назад', en: 'Back' },
@@ -57,13 +59,12 @@ const TRANSLATIONS: Record<string, Record<Lang, string>> = {
 
 @Injectable({ providedIn: 'root' })
 export class I18nService {
-  private readonly langSignal = signal<Lang>(this.loadLang());
+  private readonly langSignal = signal<Lang>(DEFAULT_LANG);
 
   readonly lang = this.langSignal.asReadonly();
 
   setLang(lang: Lang): void {
     this.langSignal.set(lang);
-    localStorage.setItem('lang', lang);
   }
 
   t(key: string, params?: Record<string, string | number>): string {
@@ -80,11 +81,7 @@ export class I18nService {
     return text;
   }
 
-  private loadLang(): Lang {
-    const stored = localStorage.getItem('lang');
-    if (stored === 'en' || stored === 'ru') {
-      return stored;
-    }
-    return 'ru';
+  path(...segments: string[]): string[] {
+    return ['/', this.langSignal(), ...segments];
   }
 }

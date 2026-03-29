@@ -1,5 +1,5 @@
-import { Component, inject, Input } from '@angular/core';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { Component, computed, inject, input } from '@angular/core';
+import { DomSanitizer } from '@angular/platform-browser';
 
 const ICONS: Record<string, string> = {
   'arrow-left': '<polyline points="15 18 9 12 15 6"/>',
@@ -14,8 +14,7 @@ const ICONS: Record<string, string> = {
 
 @Component({
   selector: 'app-icon',
-  standalone: true,
-  template: ` <span [innerHTML]="svg"></span> `,
+  template: ` <span [innerHTML]="svg()"></span> `,
   styles: [
     `
       :host {
@@ -34,13 +33,13 @@ const ICONS: Record<string, string> = {
 export class Icon {
   private readonly sanitizer = inject(DomSanitizer);
 
-  @Input() name = '';
-  @Input() size = 16;
+  readonly name = input('');
+  readonly size = input(16);
 
-  get svg(): SafeHtml {
-    const inner = ICONS[this.name] ?? '';
+  readonly svg = computed(() => {
+    const iconPath = ICONS[this.name()] ?? '';
     return this.sanitizer.bypassSecurityTrustHtml(
-      `<svg xmlns="http://www.w3.org/2000/svg" width="${this.size}" height="${this.size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`,
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${this.size()}" height="${this.size()}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${iconPath}</svg>`,
     );
-  }
+  });
 }

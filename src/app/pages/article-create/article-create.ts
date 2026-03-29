@@ -26,10 +26,10 @@ export class ArticleCreate {
       return;
     }
     this.articleService.create({ title: this.title, content: this.content });
-    this.router.navigate(['/']);
+    this.router.navigate(this.i18n.path());
   }
 
   cancel(): void {
-    this.router.navigate(['/']);
+    this.router.navigate(this.i18n.path());
   }
 }

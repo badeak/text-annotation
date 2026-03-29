@@ -38,7 +38,7 @@ export class ArticleList {
   }
 
   openArticle(id: string): void {
-    this.router.navigate(['/article', id]);
+    this.router.navigate(this.i18n.path('article', id));
   }
 
   toggleSelection(id: string): void {
