@@ -1,0 +1,35 @@
+<nav class="toolbar">
+  <button type="button" (click)="cancel()">
+    <app-icon name="arrow-left" /> {{ i18n.t('btn.back') }}
+  </button>
+  <span class="toolbar-spacer"></span>
+  <h2 class="toolbar-title">{{ i18n.t('page.createArticle') }}</h2>
+  <span class="toolbar-spacer"></span>
+  <button class="btn-accent" type="submit" form="create-form">
+    <app-icon name="save" /> {{ i18n.t('btn.save') }}
+  </button>
+</nav>
+
+<form id="create-form" class="page-content" (ngSubmit)="save()" #form="ngForm">
+  <div>
+    <label for="title">{{ i18n.t('label.title') }} <span class="required">*</span></label>
+    <input id="title" [(ngModel)]="title" name="title" required #titleField="ngModel" />
+    <span class="field-error" [class.hidden]="!(titleField.invalid && submitted)">
+      {{ i18n.t('error.titleRequired') }}
+    </span>
+  </div>
+
+  <div class="field-grow">
+    <label for="content">{{ i18n.t('label.content') }} <span class="required">*</span></label>
+    <textarea
+      id="content"
+      [(ngModel)]="content"
+      name="content"
+      required
+      #contentField="ngModel"
+    ></textarea>
+    <span class="field-error" [class.hidden]="!(contentField.invalid && submitted)">
+      {{ i18n.t('error.contentRequired') }}
+    </span>
+  </div>
+</form>

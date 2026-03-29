@@ -1,0 +1,45 @@
+<nav class="toolbar">
+  <app-lang-toggle />
+  <span class="toolbar-spacer"></span>
+  <button class="btn-danger" (click)="deleteSelected()" [disabled]="selectedIds.size === 0">
+    <app-icon name="trash" /> {{ i18n.t('btn.delete') }}
+  </button>
+  <button class="btn-accent" routerLink="/create">
+    <app-icon name="plus" /> {{ i18n.t('btn.create') }}
+  </button>
+</nav>
+
+<div class="page-content">
+  @if (articles.length) {
+    <table>
+      <thead>
+        <tr>
+          <th class="col-select">
+            <input type="checkbox" [checked]="allSelected" (change)="toggleAll()" />
+          </th>
+          <th>{{ i18n.t('table.title') }}</th>
+          <th>{{ i18n.t('table.created') }}</th>
+          <th>{{ i18n.t('table.updated') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (article of articles; track article.id) {
+          <tr class="clickable-row" (click)="openArticle(article.id)">
+            <td class="col-select" (click)="$event.stopPropagation()">
+              <input
+                type="checkbox"
+                [checked]="selectedIds.has(article.id)"
+                (change)="toggleSelection(article.id)"
+              />
+            </td>
+            <td>{{ article.title }}</td>
+            <td>{{ article.createdAt | date: 'short' : '' : i18n.lang() }}</td>
+            <td>{{ article.updatedAt | date: 'short' : '' : i18n.lang() }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  } @else {
+    <p>{{ i18n.t('msg.noArticles') }}</p>
+  }
+</div>

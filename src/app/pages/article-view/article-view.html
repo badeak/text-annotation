@@ -1,0 +1,64 @@
+@if (article) {
+  <nav class="toolbar">
+    <button (click)="back()"><app-icon name="arrow-left" /> {{ i18n.t('btn.back') }}</button>
+    <span class="toolbar-spacer"></span>
+    <button
+      class="btn-accent"
+      data-annotate
+      (click)="openAnnotationInput()"
+      [disabled]="!hasSelection || panelOpen"
+    >
+      <app-icon name="annotate" /> {{ i18n.t('btn.annotate') }}
+    </button>
+    <button [routerLink]="['/article', article.id, 'edit']">
+      <app-icon name="pencil" /> {{ i18n.t('btn.edit') }}
+    </button>
+    <button class="btn-danger" (click)="deleteArticle()">
+      <app-icon name="trash" /> {{ i18n.t('btn.delete') }}
+    </button>
+  </nav>
+
+  <h2 class="article-title">{{ article.title }}</h2>
+
+  <div class="page-content">
+    <!-- prettier-ignore -->
+    <div #contentEl class="article-content" (mouseup)="onTextSelected()">@for (segment of segments; track $index) {@if (segment.annotation) {<span class="annotated" [class.pending-highlight]="segment.pending" [title]="segment.annotation.note" [style.text-decoration-color]="segment.annotation.color" [class.active]="editingAnnotation?.id === segment.annotation.id" (click)="selectAnnotation(segment.annotation, $event)">{{ segment.text }}</span>} @else if (segment.pending) {<span class="pending-highlight">{{ segment.text }}</span>} @else {<span>{{ segment.text }}</span>}}</div>
+  </div>
+
+  <div class="annotation-panel" [class.open]="panelOpen">
+    <h3>{{ editingAnnotation ? i18n.t('page.editAnnotation') : i18n.t('page.addAnnotation') }}</h3>
+    <label for="note">{{ i18n.t('label.note') }} <span class="required">*</span></label>
+    <input
+      id="note"
+      [(ngModel)]="newNote"
+      [ngModelOptions]="{ standalone: true }"
+      [placeholder]="i18n.t('placeholder.note')"
+      required
+      (keyup.enter)="saveAnnotation()"
+    />
+    <span class="field-error" [class.hidden]="!(!newNote.trim() && annotationSubmitted)">
+      {{ i18n.t('error.noteRequired') }}
+    </span>
+    <label for="ann-color">{{ i18n.t('label.color') }}</label>
+    <input
+      id="ann-color"
+      type="color"
+      [(ngModel)]="newColor"
+      [ngModelOptions]="{ standalone: true }"
+    />
+    <div class="annotation-panel-actions">
+      <button class="btn-accent" (click)="saveAnnotation()">
+        <app-icon name="save" /> {{ i18n.t('btn.save') }}
+      </button>
+      @if (editingAnnotation) {
+        <button class="btn-danger" (click)="removeAnnotation()">
+          <app-icon name="trash" /> {{ i18n.t('btn.delete') }}
+        </button>
+      }
+      <button (click)="cancelAnnotation()"><app-icon name="x" /> {{ i18n.t('btn.cancel') }}</button>
+    </div>
+  </div>
+} @else {
+  <p>{{ i18n.t('msg.articleNotFound') }}</p>
+  <button (click)="back()"><app-icon name="arrow-left" /> {{ i18n.t('btn.backToList') }}</button>
+}

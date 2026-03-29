@@ -1,0 +1,20 @@
+.content-editor {
+  flex: 1;
+  border: 1px solid var(--secondary-dark);
+  border-radius: 4px;
+  padding: 0.5rem;
+  white-space: pre-wrap;
+  line-height: 1.6;
+  font: inherit;
+  outline: none;
+
+  &:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px var(--primary-light);
+  }
+}
+
+.annotated {
+  text-decoration: underline;
+  border-radius: 2px;
+}
