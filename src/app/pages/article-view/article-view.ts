@@ -36,6 +36,9 @@ export class ArticleView {
   hasSelection = false;
   panelOpen = false;
   editingAnnotation: Annotation | null = null;
+  tooltipText = '';
+  tooltipX = 0;
+  tooltipY = 0;
   private pendingStart = 0;
   private pendingEnd = 0;
 
@@ -51,7 +54,21 @@ export class ArticleView {
     event.stopPropagation();
     this.editingAnnotation = annotation;
     this.panelOpen = true;
+    this.hideTooltip();
     this.annotationPanel().open(annotation);
+  }
+
+  showTooltip(text: string): void {
+    this.tooltipText = text;
+  }
+
+  hideTooltip(): void {
+    this.tooltipText = '';
+  }
+
+  moveTooltip(event: MouseEvent): void {
+    this.tooltipX = event.clientX + 12;
+    this.tooltipY = event.clientY + 12;
   }
 
   /**
