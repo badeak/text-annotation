@@ -46,12 +46,15 @@
 
 .annotation-panel-actions {
   display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: space-between;
+  gap: 0.5rem;
 }
 
 .annotation-panel-actions-right {
   display: flex;
+  flex-direction: row;
   align-items: center;
   gap: 0.5rem;
 }

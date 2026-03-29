@@ -15,7 +15,14 @@
 <form id="create-form" class="page-content" (ngSubmit)="save()" #form="ngForm">
   <div>
     <label for="title">{{ i18n.t('label.title') }} <span class="required">*</span></label>
-    <input id="title" [(ngModel)]="title" name="title" required #titleField="ngModel" />
+    <input
+      id="title"
+      [(ngModel)]="title"
+      name="title"
+      required
+      #titleField="ngModel"
+      [class.input-error]="titleField.invalid && submitted"
+    />
     <span class="field-error" [class.hidden]="!(titleField.invalid && submitted)">
       {{ i18n.t('error.titleRequired') }}
     </span>
@@ -29,6 +36,7 @@
       name="content"
       required
       #contentField="ngModel"
+      [class.input-error]="contentField.invalid && submitted"
     ></textarea>
     <span class="field-error" [class.hidden]="!(contentField.invalid && submitted)">
       {{ i18n.t('error.contentRequired') }}

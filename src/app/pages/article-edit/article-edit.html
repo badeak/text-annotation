@@ -16,7 +16,14 @@
   <form id="edit-form" class="page-content" (ngSubmit)="save()" #form="ngForm">
     <div>
       <label for="title">{{ i18n.t('label.title') }} <span class="required">*</span></label>
-      <input id="title" [(ngModel)]="title" name="title" required #titleField="ngModel" />
+      <input
+        id="title"
+        [(ngModel)]="title"
+        name="title"
+        required
+        #titleField="ngModel"
+        [class.input-error]="titleField.invalid && submitted"
+      />
       <span class="field-error" [class.hidden]="!(titleField.invalid && submitted)">
         {{ i18n.t('error.titleRequired') }}
       </span>
@@ -29,6 +36,7 @@
       <div
         #contentEl
         class="content-editor"
+        [class.input-error]="submitted && contentEmpty"
         contenteditable="true"
         role="textbox"
         aria-labelledby="content-label"
