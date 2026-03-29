@@ -9,7 +9,6 @@ import { I18nService } from '../../shared/i18n.service';
   selector: 'app-article-create',
   imports: [FormsModule, Icon],
   templateUrl: './article-create.html',
-  styleUrl: './article-create.scss',
 })
 export class ArticleCreate {
   protected readonly i18n = inject(I18nService);

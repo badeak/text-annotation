@@ -4,12 +4,12 @@ import { ArticleList } from './pages/article-list/article-list';
 import { ArticleCreate } from './pages/article-create/article-create';
 import { ArticleView } from './pages/article-view/article-view';
 import { ArticleEdit } from './pages/article-edit/article-edit';
-import { DEFAULT_LANG, I18nService, Lang } from './shared/i18n.service';
+import { DEFAULT_LANG, I18nService } from './shared/i18n.service';
 
 function langGuard(route: ActivatedRouteSnapshot): boolean {
   const lang = route.paramMap.get('lang');
   if (lang === 'ru' || lang === 'en') {
-    inject(I18nService).setLang(lang as Lang);
+    inject(I18nService).setLang(lang);
     return true;
   }
   return false;
